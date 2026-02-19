@@ -20,13 +20,24 @@ base_datos_platos = []
 if archivos:
     for arc in archivos:
         try:
-            # Usamos engine='openpyxl' para evitar errores de lectura
             df = pd.read_excel(arc, engine='openpyxl')
-            lista_platos = df.stack().dropna().astype(str).tolist()
-            # Limpiamos los nombres de los platos
-            base_datos_platos.extend([p.strip() for p in lista_platos if len(p) > 4 and "Unnamed" not in p])
+            # Convertimos todo el Excel en una lista de palabras
+            lista_raw = df.stack().dropna().astype(str).tolist()
+            
+            for p in lista_raw:
+                p_limpio = p.strip()
+                # FILTRO: Solo guardamos si tiene más de 5 letras 
+                # y NO es una palabra de alérgenos o ingredientes sueltos
+                palabras_basura = ["Gluten", "Lácteos", "Frutos secos", "Nutella", "Mantequilla", "Pan ", "Unnamed"]
+                if len(p_limpio) > 5 and not any(basura in p_limpio for basura in palabras_basura):
+                    base_datos_platos.append(p_limpio)
         except Exception as e:
-            st.error(f"Error leyendo {arc.name}: Revisa que sea un Excel válido.")
+            st.error(f"Error leyendo {arc.name}")
+
+if base_datos_platos:
+    # Quitamos duplicados para que no se repitan platos
+    base_datos_platos = list(set(base_datos_platos))
+    st.success(f"✅ IA: He filtrado y aprendido {len(base_datos_platos)} platos reales.")
 
 if base_datos_platos:
     st.success(f"✅ IA: He aprendido {len(base_datos_platos)} platos de tus archivos.")
